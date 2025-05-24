@@ -1,5 +1,3 @@
-// contributed code from mallikarjun 
-
 #include <iostream>
 #include <fstream>
 #include <vector>
