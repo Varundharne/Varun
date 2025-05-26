@@ -64,163 +64,129 @@ public:
         cout << "Student added successfully.\n";
     }
 
-    void displayAll() const {
+    void displayStudents() const {
         if (students.empty()) {
-            cout << "No students to display.\n";
+            cout << "No student records found.\n";
             return;
         }
-
         cout << "\n--- Student List ---\n";
         for (const auto& s : students) {
             s.display();
         }
+        cout << "---------------------\n";
     }
 
-    void searchById(int id) const {
-        for (const auto& s : students) {
-            if (s.id == id) {
-                s.display();
-                return;
-            }
-        }
-        cout << "Student not found.\n";
-    }
-
-    void deleteById(int id) {
-        bool found = false;
-        for (auto it = students.begin(); it != students.end(); ++it) {
-            if (it->id == id) {
-                students.erase(it);
-                saveToFile();
-                cout << "Student deleted successfully.\n";
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            cout << "Student with ID " << id << " not found.\n";
-        }
-    }
-
-    void editById(int id) {
-        for (auto& s : students) {
-            if (s.id == id) {
-                cout << "Editing student:\n";
-                s.display();
-                cout << "Enter new details:\n";
-                s.input();
-                saveToFile();
-                cout << "Student updated successfully.\n";
-                return;
-            }
-        }
-        cout << "Student with ID " << id << " not found.\n";
-    }
-
-    void sortById() {
-        sort(students.begin(), students.end(), [](const Student& a, const Student& b) {
-            return a.id < b.id;
+    void searchById(int searchId) const {
+        auto it = find_if(students.begin(), students.end(), [searchId](const Student& s) {
+            return s.id == searchId;
         });
-        cout << "Students sorted by ID.\n";
-    }
 
-    void sortByName() {
-        sort(students.begin(), students.end(), [](const Student& a, const Student& b) {
-            return a.name < b.name;
-        });
-        cout << "Students sorted by Name.\n";
-    }
-
-    void loadFromFile() {
-        ifstream in(filename);
-        students.clear();
-        Student s;
-        while (in >> s.id) {
-            in.ignore();
-            getline(in, s.name);
-            in >> s.age;
-            in.ignore();
-            getline(in, s.course);
-            students.push_back(s);
+        if (it != students.end()) {
+            cout << "Student found:\n";
+            it->display();
+        } else {
+            cout << "Student with ID " << searchId << " not found.\n";
         }
-        in.close();
+    }
+
+    // ✅ CONTRIBUTION: Delete Student by ID
+    void deleteStudentById(int deleteId) {
+        auto it = remove_if(students.begin(), students.end(), [deleteId](const Student& s) {
+            return s.id == deleteId;
+        });
+
+        if (it != students.end()) {
+            students.erase(it, students.end());
+            saveToFile();
+            cout << "Student with ID " << deleteId << " deleted successfully.\n";
+        } else {
+            cout << "No student found with ID " << deleteId << ".\n";
+        }
     }
 
     void saveToFile() const {
-        ofstream out(filename);
+        ofstream outFile(filename);
         for (const auto& s : students) {
-            out << s.id << endl
-                << s.name << endl
-                << s.age << endl
-                << s.course << endl;
+            outFile << s.id << ',' << s.name << ',' << s.age << ',' << s.course << '\n';
         }
-        out.close();
+    }
+
+    void loadFromFile() {
+        ifstream inFile(filename);
+        students.clear();
+        string line;
+
+        while (getline(inFile, line)) {
+            Student s;
+            size_t pos = 0;
+
+            // Parse ID
+            pos = line.find(',');
+            s.id = stoi(line.substr(0, pos));
+            line.erase(0, pos + 1);
+
+            // Parse Name
+            pos = line.find(',');
+            s.name = line.substr(0, pos);
+            line.erase(0, pos + 1);
+
+            // Parse Age
+            pos = line.find(',');
+            s.age = stoi(line.substr(0, pos));
+            line.erase(0, pos + 1);
+
+            // Remaining is Course
+            s.course = line;
+
+            students.push_back(s);
+        }
     }
 };
 
-void showMenu() {
-    cout << "\n===== Student Management System =====\n";
-    cout << "1. Add Student\n";
-    cout << "2. Display All Students\n";
-    cout << "3. Search Student by ID\n";
-    cout << "4. Delete Student by ID\n";
-    cout << "5. Edit Student by ID\n";
-    cout << "6. Sort Students by ID\n";
-    cout << "7. Sort Students by Name\n";
-    cout << "8. Exit\n";
-    cout << "Enter your choice: ";
-}
-
+// ---------- Main Program ----------
 int main() {
     StudentManager manager;
     int choice;
 
     do {
-        showMenu();
+        cout << "\n===== Student Management Menu =====\n";
+        cout << "1. Add Student\n";
+        cout << "2. Display All Students\n";
+        cout << "3. Search Student by ID\n";
+        cout << "4. Exit\n";
+        cout << "5. Delete Student by ID\n"; // ✅ New Menu Option
+        cout << "Enter your choice: ";
         cin >> choice;
 
-        switch (choice) {
-        case 1:
-            manager.addStudent();
-            break;
-        case 2:
-            manager.displayAll();
-            break;
-        case 3: {
-            int id;
-            cout << "Enter ID to search: ";
-            cin >> id;
-            manager.searchById(id);
-            break;
+        switch(choice) {
+            case 1:
+                manager.addStudent();
+                break;
+            case 2:
+                manager.displayStudents();
+                break;
+            case 3: {
+                int id;
+                cout << "Enter ID to search: ";
+                cin >> id;
+                manager.searchById(id);
+                break;
+            }
+            case 4:
+                cout << "Exiting the program.\n";
+                break;
+            case 5: {
+                int id;
+                cout << "Enter ID to delete: ";
+                cin >> id;
+                manager.deleteStudentById(id);
+                break;
+            }
+            default:
+                cout << "Invalid choice. Please try again.\n";
         }
-        case 4: {
-            int id;
-            cout << "Enter ID to delete: ";
-            cin >> id;
-            manager.deleteById(id);
-            break;
-        }
-        case 5: {
-            int id;
-            cout << "Enter ID to edit: ";
-            cin >> id;
-            manager.editById(id);
-            break;
-        }
-        case 6:
-            manager.sortById();
-            break;
-        case 7:
-            manager.sortByName();
-            break;
-        case 8:
-            cout << "Exiting program.\n";
-            break;
-        default:
-            cout << "Invalid choice. Try again.\n";
-        }
-
-    } while (choice != 8);
+    } while (choice != 4);
 
     return 0;
 }
+
